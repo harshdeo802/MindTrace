@@ -9,6 +9,8 @@
 #include "core/indexing/inverted_index.hpp"
 #include "search/query_executor.hpp"
 #include "timeline/timeline_builder.hpp"
+#include "collectors/browser_collector.hpp"
+#include "collectors/window_focus_collector.hpp"
 #include "common/utils.hpp"
 #include "common/config.hpp"
 
@@ -139,8 +141,10 @@ void cmd_demo(std::shared_ptr<EventStore> store,
         event.id = id;
         index->add(event);
     }
-
+    
     std::cout << "   Loaded " << demo_events.size() << " demo events.\n\n";
+
+
 
     // Run sample queries
     std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
