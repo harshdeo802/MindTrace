@@ -1,0 +1,23 @@
+﻿Test project C:/Users/harsh/.gemini/antigravity/scratch/MindTrace/build
+    Start 1: TestActivityEvent
+1/9 Test #1: TestActivityEvent ................   Passed    0.10 sec
+    Start 2: TestEventStore
+2/9 Test #2: TestEventStore ...................   Passed    0.16 sec
+    Start 3: TestConcurrentQueue
+3/9 Test #3: TestConcurrentQueue ..............   Passed    0.30 sec
+    Start 4: TestEventPipeline
+4/9 Test #4: TestEventPipeline ................   Passed    2.23 sec
+    Start 5: TestInvertedIndex
+5/9 Test #5: TestInvertedIndex ................   Passed    0.08 sec
+    Start 6: TestQueryParser
+6/9 Test #6: TestQueryParser ..................   Passed    0.08 sec
+    Start 7: TestQueryExecutor
+7/9 Test #7: TestQueryExecutor ................   Passed    0.14 sec
+    Start 8: TestTimelineBuilder
+8/9 Test #8: TestTimelineBuilder ..............   Passed    0.08 sec
+    Start 9: TestCollectors
+9/9 Test #9: TestCollectors ...................   Passed    3.13 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =   6.35 sec
