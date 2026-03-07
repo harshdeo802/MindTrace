@@ -19,5 +19,7 @@ compile_commands.json
 _deps/
 
 # Build/test logs
-build_errors*.txt
+build*.txt
+link*.txt
 test_results*.txt
+*.log

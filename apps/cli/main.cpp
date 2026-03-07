@@ -65,7 +65,7 @@ void print_usage() {
 void print_event(const ActivityEvent& event) {
     std::cout << "  " << format_time_only(event.timestamp)
               << "  [" << event_type_to_string(event.type) << "]  "
-              << truncate(event.source, 40) << "  —  "
+              << truncate(event.source, 40) << "  -  "
               << truncate(event.content, 50) << "\n";
 }
 
@@ -109,17 +109,17 @@ void cmd_timeline(const std::string& day,
     auto timeline = builder.build(events, period_start, period_end);
 
     std::cout << "\n📅 Timeline: " << (day == "yesterday" ? "Yesterday" : "Today") << "\n";
-    std::cout << "   " << format_timestamp(period_start) << " — "
+    std::cout << "   " << format_timestamp(period_start) << " - "
               << format_timestamp(period_end) << "\n";
     std::cout << "   " << timeline.total_events() << " event(s) in "
               << timeline.sessions.size() << " session(s)\n\n";
 
     for (size_t i = 0; i < timeline.sessions.size(); ++i) {
         const auto& session = timeline.sessions[i];
-        std::cout << "  ─── Session " << (i + 1) << " ("
-                  << format_time_only(session.start_time) << " — "
+        std::cout << "  --- Session " << (i + 1) << " ("
+                  << format_time_only(session.start_time) << " - "
                   << format_time_only(session.end_time) << ") "
-                  << "[" << session.primary_app << "] ───\n";
+                  << "[" << session.primary_app << "] ---\n";
 
         for (const auto& event : session.events) {
             print_event(event);
@@ -230,20 +230,24 @@ void cmd_demo(std::shared_ptr<EventStore> store,
 
 
     // Run sample queries
-    std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+    std::cout << "------------------------------------------------\n";
     cmd_search("files edited today", store, index);
 
-    std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+    std::cout << "------------------------------------------------\n";
     cmd_search("websites visited today", store, index);
 
-    std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+    std::cout << "------------------------------------------------\n";
     cmd_timeline("today", store);
 
-    std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+    std::cout << "------------------------------------------------\n";
     cmd_stats(store, index);
 }
 
 int main(int argc, char* argv[]) {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     spdlog::set_level(spdlog::level::warn);
 
     print_header();

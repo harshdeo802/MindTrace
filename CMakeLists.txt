@@ -60,7 +60,7 @@ add_library(mindtrace_core STATIC
     src/core/indexing/inverted_index.cpp
 )
 
-target_include_directories(mindtrace_core PUBLIC ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(mindtrace_core PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(mindtrace_core PUBLIC
     nlohmann_json::nlohmann_json
     spdlog::spdlog
@@ -76,7 +76,7 @@ add_library(mindtrace_collectors STATIC
     src/collectors/clipboard_collector.cpp
 )
 
-target_include_directories(mindtrace_collectors PUBLIC ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(mindtrace_collectors PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(mindtrace_collectors PUBLIC mindtrace_core)
 if(WIN32)
     target_link_libraries(mindtrace_collectors PUBLIC psapi user32 shell32)
@@ -90,7 +90,7 @@ add_library(mindtrace_search STATIC
     src/search/query_executor.cpp
 )
 
-target_include_directories(mindtrace_search PUBLIC ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(mindtrace_search PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(mindtrace_search PUBLIC mindtrace_core)
 
 # ── Timeline Library ────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ add_library(mindtrace_timeline STATIC
     src/timeline/timeline_builder.cpp
 )
 
-target_include_directories(mindtrace_timeline PUBLIC ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(mindtrace_timeline PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(mindtrace_timeline PUBLIC mindtrace_core)
 
 # ── CLI Application ────────────────────────────────────────────────────

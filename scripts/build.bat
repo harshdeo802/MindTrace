@@ -33,9 +33,9 @@ goto :parse_args
 :done_args
 
 echo.
-echo   ╔══════════════════════════════════════╗
-echo   ║       MindTrace Build Script         ║
-echo   ╚══════════════════════════════════════╝
+echo   ======================================
+echo          MindTrace Build Script         
+echo   ======================================
 echo.
 echo   Build Type: %BUILD_TYPE%
 echo.

@@ -26,12 +26,17 @@ void WindowFocusCollector::start() {
 void WindowFocusCollector::stop() {
     if (!running_.exchange(false)) return;
 
-    if (thread_id_ != 0) {
-        // Post a quit message to break out of the thread's GetMessage loop
-        PostThreadMessageW(thread_id_, WM_QUIT, 0, 0);
-    }
-
     if (thread_.joinable()) {
+        // Wait for thread to start and capture its ID
+        while (thread_id_.load() == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        
+        // Post quit message, retrying if the message queue isn't fully created yet
+        while (!PostThreadMessageW(thread_id_.load(), WM_QUIT, 0, 0)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
         thread_.join();
     }
     
@@ -40,7 +45,11 @@ void WindowFocusCollector::stop() {
 }
 
 void WindowFocusCollector::run_message_loop() {
-    thread_id_ = GetCurrentThreadId();
+    // Force message queue creation so PostThreadMessage won't fail
+    MSG msg;
+    PeekMessageW(&msg, nullptr, WM_USER, WM_USER, PM_NOREMOVE);
+    
+    thread_id_.store(GetCurrentThreadId());
 
     // Hook window focus changes (EVENT_SYSTEM_FOREGROUND)
     hook_ = SetWinEventHook(
@@ -57,7 +66,6 @@ void WindowFocusCollector::run_message_loop() {
     }
 
     // Standard message loop to keep thread alive and receive hook callbacks
-    MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);

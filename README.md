@@ -110,18 +110,20 @@ After building, the executable will be located in the `build/Release` (Windows) 
 
 ```
 MindTrace/
-├── src/
-│   ├── core/
-│   │   ├── event/           ActivityEvent model + serialization
-│   │   ├── pipeline/        Concurrent queue + multi-stage pipeline
-│   │   ├── indexing/        Inverted index (keyword/time/app)
-│   │   └── storage/         SQLite-backed EventStore
+├── include/                 Public API headers (.hpp)
 │   ├── collectors/          File, Browser, Window, Clipboard collectors
-│   ├── search/              QueryParser → QueryPlanner → QueryExecutor
-│   ├── timeline/            Session grouping + timeline reconstruction
-│   └── common/              Logging, config, utilities
-├── apps/cli/                CLI entry point
-├── tests/                   50+ GoogleTest unit tests
+│   ├── common/              Logging, config, utilities
+│   ├── core/                Event models, storage, indexing, pipeline
+│   ├── search/              Query matching and execution
+│   └── timeline/            Session timeline reconstruction
+├── src/                     Private implementations (.cpp)
+│   ├── collectors/
+│   ├── common/
+│   ├── core/
+│   ├── search/
+│   └── timeline/
+├── apps/cli/                CLI entry point (main.cpp)
+├── tests/                   GoogleTest unit tests
 └── CMakeLists.txt           Root build configuration
 ```
 

@@ -5,6 +5,8 @@
 #include <thread>
 #include <string>
 
+#include <atomic>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -28,7 +30,7 @@ private:
                                       LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime);
     
     std::thread thread_;
-    DWORD thread_id_ = 0;
+    std::atomic<DWORD> thread_id_{0};
     HWINEVENTHOOK hook_ = nullptr;
     
     // Global pointer to instance for the static callback to use
