@@ -17,3 +17,7 @@ compile_commands.json
 .vscode/
 *.user
 _deps/
+
+# Build/test logs
+build_errors*.txt
+test_results*.txt
