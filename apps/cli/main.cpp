@@ -11,12 +11,32 @@
 #include "timeline/timeline_builder.hpp"
 #include "collectors/browser_collector.hpp"
 #include "collectors/window_focus_collector.hpp"
+#include "collectors/filesystem_collector.hpp"
 #include "common/utils.hpp"
 #include "common/config.hpp"
+
+#include <csignal>
+#include <atomic>
+#include <thread>
+#include <chrono>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <shlobj.h>
+#endif
 
 #include <spdlog/spdlog.h>
 
 using namespace mindtrace;
+
+std::atomic<bool> daemon_running{true};
+
+void signal_handler(int signum) {
+    if (signum == SIGINT) {
+        std::cout << "\n[!] Caught interrupt signal, stopping mindtrace daemon...\n";
+        daemon_running.store(false);
+    }
+}
 
 void print_header() {
     std::cout << R"(
@@ -36,6 +56,7 @@ void print_usage() {
               << "  mindtrace search <query>     Search your activity history\n"
               << "  mindtrace timeline [day]     Show activity timeline\n"
               << "  mindtrace stats              Show database statistics\n"
+              << "  mindtrace daemon             Run in background and collect events\n"
               << "  mindtrace demo               Load demo data and run sample queries\n"
               << "  mindtrace help               Show this help message\n"
               << std::endl;
@@ -114,6 +135,68 @@ void cmd_stats(std::shared_ptr<EventStore> store,
     std::cout << "   Indexed events:   " << index->event_count() << "\n";
     std::cout << "   Unique keywords:  " << index->keyword_count() << "\n";
     std::cout << std::endl;
+}
+
+void cmd_daemon(std::shared_ptr<EventStore> store,
+                std::shared_ptr<InvertedIndex> index) {
+    std::cout << "\n🚀 Starting MindTrace Background Daemon...\n";
+    
+    // Setup signal handler for graceful shutdown
+    std::signal(SIGINT, signal_handler);
+
+    // Identify Documents path
+#ifdef _WIN32
+    char path[MAX_PATH];
+    std::filesystem::path docs_path = std::filesystem::current_path(); // fallback
+    if (SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_PERSONAL, NULL, 0, path))) {
+        docs_path = path;
+    }
+#else
+    std::filesystem::path docs_path = std::getenv("HOME");
+    docs_path /= "Documents";
+#endif
+
+    std::cout << "   Watching directory: " << docs_path.string() << "\n\n";
+
+    // Initialize Collectors
+    mindtrace::WindowFocusCollector window_collector;
+    mindtrace::BrowserCollector browser_collector;
+    mindtrace::FileSystemCollector fs_collector(docs_path, std::chrono::seconds(2));
+
+    // Shared callback
+    auto callback = [&](mindtrace::ActivityEvent e) {
+        uint64_t id = store->save(e);
+        e.id = id;
+        index->add(e);
+        spdlog::info("Captured: [{}] {}", event_type_to_string(e.type), e.content);
+        // Print to console for visibility
+        std::cout << "  " << format_time_only(e.timestamp) 
+                  << "  [" << event_type_to_string(e.type) << "]  " 
+                  << truncate(e.content, 60) << "\n";
+    };
+
+    window_collector.set_callback(callback);
+    browser_collector.set_callback(callback);
+    fs_collector.set_callback(callback);
+
+    // Start all
+    window_collector.start();
+    browser_collector.start();
+    fs_collector.start();
+
+    std::cout << "   (Daemon running. Press Ctrl+C to stop tracking)\n\n";
+
+    // Block until signaled
+    while (daemon_running.load()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
+    // Stop all
+    std::cout << "\n   Shutting down collectors gracefully...\n";
+    window_collector.stop();
+    browser_collector.stop();
+    fs_collector.stop();
+    std::cout << "   Daemon stopped.\n\n";
 }
 
 void cmd_demo(std::shared_ptr<EventStore> store,
@@ -198,6 +281,9 @@ int main(int argc, char* argv[]) {
 
     } else if (command == "stats") {
         cmd_stats(store, index);
+
+    } else if (command == "daemon") {
+        cmd_daemon(store, index);
 
     } else if (command == "demo") {
         cmd_demo(store, index);
