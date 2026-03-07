@@ -78,6 +78,9 @@ add_library(mindtrace_collectors STATIC
 
 target_include_directories(mindtrace_collectors PUBLIC ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(mindtrace_collectors PUBLIC mindtrace_core)
+if(WIN32)
+    target_link_libraries(mindtrace_collectors PUBLIC psapi user32 shell32)
+endif()
 
 # ── Search Library ──────────────────────────────────────────────────────
 

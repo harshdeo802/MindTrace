@@ -78,12 +78,13 @@ void CALLBACK WindowFocusCollector::WinEventProc(
 
     // 1. Get window title
     const int max_title_len = 512;
-    wchar_t title_buf[max_title_len];
-    GetWindowTextW(hwnd, title_buf, max_title_len);
+    wchar_t title_buf[max_title_len] = {0};
+    int len = GetWindowTextW(hwnd, title_buf, max_title_len);
+    if (len == 0) return; // Window has no title or died
     
     // Narrow cast to UTF-8
-    char title_utf8[max_title_len];
-    WideCharToMultiByte(CP_UTF8, 0, title_buf, -1, title_utf8, max_title_len, nullptr, nullptr);
+    char title_utf8[max_title_len * 2] = {0};
+    WideCharToMultiByte(CP_UTF8, 0, title_buf, -1, title_utf8, sizeof(title_utf8), nullptr, nullptr);
     std::string title(title_utf8);
 
     if (title.empty()) return; // Ignore invisible/background framework windows
@@ -100,7 +101,7 @@ void CALLBACK WindowFocusCollector::WinEventProc(
     if (process_id != 0) {
         HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, process_id);
         if (hProcess) {
-            wchar_t path_buf[MAX_PATH];
+            wchar_t path_buf[MAX_PATH] = {0};
             if (GetModuleFileNameExW(hProcess, nullptr, path_buf, MAX_PATH)) {
                 std::filesystem::path full_path(path_buf);
                 exe_name = full_path.filename().string();
