@@ -10,7 +10,8 @@ MindTrace is a local-first C++20 activity indexing engine. It captures OS events
 
 ## Features
 
-- **Activity Indexing** — File opens/edits, browser visits, window focus, clipboard
+- **Activity Indexing** — Real-time tracking of file modifications (FileSystem), Chrome browser visits (SQLite polling), and active application context (Win32 Event Hooks)
+- **Background Daemon** — Runs silently to collect events locally while you use your computer
 - **Natural Language Search** — `"files edited today"`, `"websites visited during work hours"`
 - **Timeline Reconstruction** — Groups events into sessions by time proximity
 - **Privacy-First** — All data stored locally in SQLite, never leaves your machine
@@ -49,6 +50,21 @@ MindTrace is a local-first C++20 activity indexing engine. It captures OS events
 
 ### Build Steps
 
+MindTrace provides convenient build scripts for Windows and Unix systems that automatically configure CMake and compile the release binary.
+
+**Windows (PowerShell/CMD):**
+```bat
+.\scripts\build.bat
+```
+
+**Linux/macOS:**
+```bash
+./scripts/build.sh
+```
+
+### Manual Build
+
+If you prefer to build manually:
 ```bash
 mkdir build && cd build
 cmake .. -G "Ninja"
@@ -66,8 +82,13 @@ ctest --output-on-failure
 
 ## Usage
 
+After building, the executable will be located in the `build/Release` (Windows) or `build` directory.
+
 ```bash
-# Load demo data and see example output
+# Start the background collector daemon (Ctrl+C to stop)
+./mindtrace daemon
+
+# Load demo data to try out search without generating real activity
 ./mindtrace demo
 
 # Search activity
