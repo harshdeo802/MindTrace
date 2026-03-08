@@ -1,7 +1,17 @@
 #include "collectors/filesystem_collector.hpp"
 #include <spdlog/spdlog.h>
+#include <unordered_set>
+#include <algorithm>
+#include <cctype>
 
 namespace mindtrace {
+
+// Helper to convert string to lowercase
+static std::string to_lower_ext(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return s;
+}
 
 void FileSystemCollector::start() {
     if (running_.exchange(true)) return;
@@ -39,6 +49,17 @@ void FileSystemCollector::scan_directory() {
             watch_dir_, std::filesystem::directory_options::skip_permission_denied, ec);
         auto end = std::filesystem::recursive_directory_iterator();
 
+        // Maintain allowed text, code, document, and media extensions
+        static const std::unordered_set<std::string> allowed_extensions = {
+            ".txt", ".md", ".pdf", ".doc", ".docx", ".rtf", ".csv", ".xlsx", ".pptx",
+            ".cpp", ".hpp", ".h", ".c", ".py", ".js", ".ts", ".html", ".css", ".json",
+            ".png", ".jpg", ".jpeg", ".gif", ".mp4", ".mov", ".flv"
+        };
+        
+        static const std::unordered_set<std::string> ignored_directories = {
+            "appdata", "cache", "logs", "temp", "tmp", "node_modules", "build"
+        };
+
         while (it != end && running_.load()) {
             if (ec) {
                 // Skip problematic directories (e.g., junctions, locked folders)
@@ -48,7 +69,27 @@ void FileSystemCollector::scan_directory() {
 
             try {
                 const auto& entry = *it;
+
+                // Eagerly skip known cache folders and hidden directories (starting with '.')
+                if (entry.is_directory(ec) && !ec) {
+                    std::string dir_name = to_lower_ext(entry.path().filename().string());
+                    if (dir_name.length() > 0 && dir_name[0] == '.') {
+                        it.disable_recursion_pending();
+                    } else if (ignored_directories.count(dir_name) > 0) {
+                        it.disable_recursion_pending();
+                    }
+                    it.increment(ec);
+                    continue;
+                }
+
                 if (!entry.is_regular_file(ec) || ec) {
+                    it.increment(ec);
+                    continue;
+                }
+
+                std::string ext = to_lower_ext(entry.path().extension().string());
+                if (allowed_extensions.count(ext) == 0) {
+                    // Extension is not an explicitly tracked human representation format
                     it.increment(ec);
                     continue;
                 }
