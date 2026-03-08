@@ -2,6 +2,9 @@
 #include <spdlog/spdlog.h>
 #include <chrono>
 #include <filesystem>
+#include <unordered_set>
+#include <algorithm>
+#include <cctype>
 
 #ifdef _WIN32
 #include <psapi.h>
@@ -11,6 +14,13 @@ namespace mindtrace {
 
 #ifdef _WIN32
 WindowFocusCollector* WindowFocusCollector::instance_ = nullptr;
+
+// Helper to convert string to lowercase
+static std::string to_lower_ext(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return s;
+}
 
 void WindowFocusCollector::start() {
     if (running_.exchange(true)) return;
@@ -97,9 +107,19 @@ void CALLBACK WindowFocusCollector::WinEventProc(
 
     if (title.empty()) return; // Ignore invisible/background framework windows
 
+    // Ignore known system window titles (e.g. alt-tab menus or desktop backgrounds)
+    if (title == "Task Switching" || title == "Program Manager") return;
+
+    // Reject windows that are too small to be meaningful applications
+    RECT rect;
+    if (GetWindowRect(hwnd, &rect)) {
+        int width = rect.right - rect.left;
+        int height = rect.bottom - rect.top;
+        if (width < 100 || height < 100) return;
+    }
+
     // To prevent spamming if the OS sends duplicate events
     if (title == instance_->last_window_title_) return;
-    instance_->last_window_title_ = title;
 
     // 2. Get process executable name
     DWORD process_id = 0;
@@ -117,6 +137,31 @@ void CALLBACK WindowFocusCollector::WinEventProc(
             CloseHandle(hProcess);
         }
     }
+
+    // List of known background noise executables (converted to lowercase for comparison)
+    static const std::unordered_set<std::string> ignored_exes = {
+        "explorer.exe", 
+        "shellexperiencehost.exe", 
+        "searchhost.exe", 
+        "searchui.exe", 
+        "systemsettings.exe",
+        "lockapp.exe",
+        "applicationframehost.exe",
+        "dwm.exe",
+        "textinputhost.exe",
+        "taskmgr.exe"
+    };
+
+    if (ignored_exes.count(to_lower_ext(exe_name)) > 0) return;
+
+    auto now_time = std::chrono::steady_clock::now();
+    // Throttle: Ignore transitions happening faster than 500ms (likely alt-tab spamming)
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(now_time - instance_->last_event_time_).count() < 500) {
+        return;
+    }
+    
+    instance_->last_window_title_ = title;
+    instance_->last_event_time_ = now_time;
 
     // 3. Emit MindTrace Event
     auto now = static_cast<uint64_t>(

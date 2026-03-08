@@ -33,9 +33,9 @@ private:
     std::atomic<DWORD> thread_id_{0};
     HWINEVENTHOOK hook_ = nullptr;
     
-    // Global pointer to instance for the static callback to use
     static WindowFocusCollector* instance_;
     std::string last_window_title_;
+    std::chrono::steady_clock::time_point last_event_time_;
 #endif
 };
 
